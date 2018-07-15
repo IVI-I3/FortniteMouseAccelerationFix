@@ -26,10 +26,10 @@ public class Environment {
 		this.primaryStage = primaryStage;
 	}
 	
-	public void findAndPatch(boolean setStatus) {
+	public void find() {
 		errorMessage = "An Unknown Error Occured";
 		try {
-			if(isWindows()){
+			if(isWindows() && iniFile==null){
 				//Initialize Root Node and SearchFiles-> Own Object to look for which stores a File and the Name of the File
 				searchFiles.add(new SearchFile(new File(userHomeDirectory),fileNamesToLookFor.get(0)));
 					for(int i=1;i<fileNamesToLookFor.size();i++){
@@ -45,7 +45,7 @@ public class Environment {
 					 This keeps on going till the program found the last node which is GameUserSettings.ini
 					 */
 					for(int i=0;i<searchFiles.size();i++){
-						filesInFolder = Arrays.asList(searchFiles.get(i).getFile().listFiles());
+						filesInFolder = new ArrayList<File>(Arrays.asList(searchFiles.get(i).getFile().listFiles()));
 						for(File fileInFolder:filesInFolder){
 							if(fileInFolder.getName().equalsIgnoreCase(searchFiles.get(i).getLookFor())){
 									if(searchFiles.size()>i+1){
@@ -62,34 +62,32 @@ public class Environment {
 		} catch(Exception e) {
 			openManually();
 		}
+		//Clean up
+		searchFiles.clear();
+		filesInFolder.clear();
 		
 		
 		//if somehow the program couldnt locate the ini-File by itself
 		//the user has the chance to locate the .ini File for herself/himself
 		if(iniFile==null) {
 			openManually();
-		}else {
-			if(iniFile.getName().endsWith(".ini")) {
-				patch(setStatus,iniFile);
-			}else {
-				errorMessage = "This program can only patch ini Files";
-			}
 		}
 		
 		
 	}
 	
 	//After locating the .ini File we must now find the bDisableMouseAcceleration setting in the .ini File and change it to the opposite
-	public void patch(boolean setStatus,File file) {
+	public void patch(boolean setStatus) {
 		//just to make sure iniFile is located
 		if(iniFile==null) {
 			openManually();
+			patch(setStatus);
 		}else {
 			if(iniFile.getName().endsWith(".ini")) {
 				try{
 					//Reads the whole .ini File into the String text
-						String text = new Scanner(file).useDelimiter("\\A").next();
-						if(!text.toLowerCase().contains(""+setStatus)) {
+						String text = new Scanner(iniFile).useDelimiter("\\A").next();
+						if(text.contains("bDisableMouseAcceleration="+(""+!setStatus).substring(0, 1).toUpperCase()+(""+!setStatus).substring(1))) {
 							errorMessage= "MouseAcceleration already turned " + (setStatus ? "On" : "Off"); 
 						}else {
 							//Changes the bDisableMouseAcceleration setting to the opposite
@@ -118,6 +116,30 @@ public class Environment {
 		}
 		
 	}
+	public boolean checkPatchStatus() {
+		boolean patchStatus = false;
+		if(iniFile==null) {
+			openManually();
+			checkPatchStatus();
+		}else {
+			if(iniFile.getName().endsWith(".ini")) {
+				
+				try{
+					//Reads the whole .ini File into the String text
+						String text = new Scanner(iniFile).useDelimiter("\\A").next();
+						if(text.contains("bDisableMouseAcceleration=True")) {
+							 patchStatus=true;
+						}else {
+							patchStatus=false;
+						}
+				} catch(Exception e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		return patchStatus;
+	}
+	
 	// If the file couldnt be found under ...Appdata/Local/ForniteGame... see Variable fileNamesToLookFor
 	// The user gets the chance to locate the .ini File with a FileChooser
 	private void openManually() {
@@ -137,6 +159,10 @@ public class Environment {
 	
 	public String getErrorMessage() {
 		return errorMessage;
+	}
+	
+	public void setErrorMessage(String errorMessage) {
+		this.errorMessage = errorMessage;
 	}
 
 	public String getuserHomeDirectory() {

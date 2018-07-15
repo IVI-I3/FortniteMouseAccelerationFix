@@ -1,5 +1,9 @@
 package main;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 //This program is written with JavaFX
 //For any further question feel free to message me at: dr-evil3@web.de
 //Date: 14-07-2018
@@ -10,17 +14,18 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import javafx.scene.control.TextArea;
 
 
 
 public class Main extends Application{
-	public static final double windowWidth=350,windowHeight=250,buttonPrefWidth=200,buttonPrefHeight=50;
-	private VBox buttonBox;
+	public static final double windowWidth=350,windowHeight=350,buttonPrefWidth=300,buttonPrefHeight=50;
+	private List<Button> buttons = new ArrayList<>();
+	private VBox vBox1;
 	private AnchorPane pane;
 	private Environment e1;
-	private Text text;
+	private TextArea textArea;
 	boolean isFound = false;
 	public static void main(String[] args) {
 		launch(args);
@@ -29,62 +34,73 @@ public class Main extends Application{
 		primaryStage.setTitle("Fortnite Mouse Acceleration Fix");
 		//Buttons to Choose from
 		Button disable = new Button("Disable Mouse Acceleration");
-		Button enable = new Button("Enable Mouse Accelration");	
+		Button enable = new Button("Enable Mouse Acceleration");	
+		Button check = new Button("Check Mouse Acceleration Status");
+		Collections.addAll(buttons,disable,enable,check);
+		for(Button b:buttons) {
+			b.setPrefWidth(buttonPrefWidth);
+			b.setPrefHeight(buttonPrefHeight);
+		}
+		
+		
 		//Display Status message - Worked / Didn't work
-		text = new Text("");
-		disable.setPrefWidth(buttonPrefWidth);
-		enable.setPrefWidth(buttonPrefWidth);
-		disable.setPrefHeight(buttonPrefHeight);
-		enable.setPrefHeight(buttonPrefHeight);
+		textArea = new TextArea("");
+		textArea.setPrefHeight(100);
+		textArea.setPrefWidth(buttonPrefWidth);
+		textArea.setEditable(false);
 		
 		e1 = new Environment(primaryStage);
 		//EventHandling for Disable Button
 		disable.setOnAction(action -> {
-			if(!isFound) {
-				e1.findAndPatch(false);
-				isFound = true;
-			}else {
-				e1.patch(false, e1.getIniFile());
-			}
+			e1.find();
+			e1.patch(false);
 			refreshStage();
 		});
 		//EventHandling for Enable Button
 		enable.setOnAction(action ->{
-			if(!isFound) {
-				e1.findAndPatch(true);
-				isFound = true;
-			}else {
-				e1.patch(true, e1.getIniFile());
-			}
+			e1.find();
+			e1.patch(true);
 			refreshStage();
+		});
+		check.setOnAction(action ->{
+			e1.find();
+			if(e1.getIniFile()==null) {
+				e1.setErrorMessage("Could not find .ini File");
+			}else {
+				if(!e1.checkPatchStatus()) {
+					e1.setErrorMessage("MouseAcceleration is Enabled\nFound the .ini File\nunder\n"+e1.getIniFile().getAbsolutePath());
+				}else {
+					e1.setErrorMessage("MouseAcceleration is Disabled\nFound the .ini File\nunder\n"+e1.getIniFile().getAbsolutePath());
+				}
+				
+			}
 			refreshStage();
 		});
 		
 		
+		
+		
 		//Add Button To Vertical Box and build JavaFX GUI
 		pane = new AnchorPane();
-		buttonBox = new VBox(10);
-		buttonBox.getChildren().add(disable);
-		buttonBox.getChildren().add(enable);
+		vBox1 = new VBox(10);
+		vBox1.getChildren().addAll(buttons);
+		vBox1.getChildren().add(textArea);
 		
-		paint();
+		drawGUI();
 		
 		primaryStage.setScene(new Scene(pane,windowWidth,windowHeight));
 		primaryStage.setResizable(false);
 		primaryStage.show();
 	}
 	public void refreshStage() {
-		text.setText(""+e1.getErrorMessage());
-		paint();
+		textArea.setText(""+e1.getErrorMessage());
+		drawGUI();
 	}
-	//To refresh the GUI after the user performed some action f.e clicked a button, so the text gets refreshed
-	public void paint() {
-		pane.getChildren().removeAll(buttonBox,text);
-		pane.getChildren().add(buttonBox);
-		pane.getChildren().add(text);
-		AnchorPane.setRightAnchor(buttonBox, windowWidth/2-buttonPrefWidth/2);
-		AnchorPane.setTopAnchor(buttonBox,  windowHeight/2-buttonPrefHeight*2);
-		AnchorPane.setRightAnchor(text, buttonPrefWidth/1.3-text.getText().length()*2.5);
-		AnchorPane.setBottomAnchor(text,  windowHeight/4.00);
+	//To refresh the GUI after the user performed some action f.e clicked a button, so the textArea gets refreshed
+	public void drawGUI() {
+		pane.getChildren().removeAll(vBox1);
+		pane.getChildren().add(vBox1);
+		AnchorPane.setRightAnchor(vBox1, windowWidth/2-buttonPrefWidth/2);
+		AnchorPane.setTopAnchor(vBox1,  windowHeight/2-buttonPrefHeight*buttons.size());
 	}
 }
